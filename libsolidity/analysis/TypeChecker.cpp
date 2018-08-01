@@ -1647,8 +1647,26 @@ bool TypeChecker::visit(FunctionCall const& _functionCall)
 		else if (functionName->name() == "suicide" && functionType->kind() == FunctionType::Kind::Selfdestruct)
 			m_errorReporter.typeError(_functionCall.location(), "\"suicide\" has been deprecated in favour of \"selfdestruct\"");
 	}
-	if (!m_insideEmitStatement && functionType->kind() == FunctionType::Kind::Event)
-		m_errorReporter.typeError(_functionCall.location(), "Event invocations have to be prefixed by \"emit\".");
+
+	// Declaring it here since it's used here and below again
+	bool const abiEncodeV2 = m_scope->sourceUnit().annotation().experimentalFeatures.count(ExperimentalFeature::ABIEncoderV2);
+
+	if (functionType->kind() == FunctionType::Kind::Event)
+	{
+		if (!m_insideEmitStatement)
+			m_errorReporter.typeError(_functionCall.location(), "Event invocations have to be prefixed by \"emit\".");
+		if (!abiEncodeV2)
+			for (size_t i = 0; i < arguments.size(); ++i)
+			{
+				auto const& argType = type(*arguments[i]);
+				if (argType->category() == Type::Category::Struct)
+					m_errorReporter.typeError(
+						arguments[i]->location(),
+						"Using structs in events is only supported in the new experimental ABI encoder. "
+						"Use \"pragma experimental ABIEncoderV2;\" to enable the feature."
+					);
+			}
+	}
 
 	TypePointers parameterTypes = functionType->parameterTypes();
 
@@ -1728,8 +1746,6 @@ bool TypeChecker::visit(FunctionCall const& _functionCall)
 	}
 	else if (isPositionalCall)
 	{
-		bool const abiEncodeV2 = m_scope->sourceUnit().annotation().experimentalFeatures.count(ExperimentalFeature::ABIEncoderV2);
-
 		for (size_t i = 0; i < arguments.size(); ++i)
 		{
 			auto const& argType = type(*arguments[i]);

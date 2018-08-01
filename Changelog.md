@@ -79,6 +79,7 @@ Bugfixes:
  * References Resolver: Enforce ``storage`` as data location for mappings.
  * References Resolver: Report error instead of assertion fail when FunctionType has an undeclared type as parameter.
  * Type Checker: Consider fixed size arrays when checking for recursive structs.
+ * Type Checker: Report error instead of crash when using structs in events without experimental ABIEncoderV2.
  * Type System: Allow arbitrary exponents for literals with a mantissa of zero.
 
 ### 0.4.24 (2018-05-16)
