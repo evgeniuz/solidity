@@ -21,6 +21,7 @@
 
 #include "./Instruction.h"
 
+#include <algorithm>
 #include <functional>
 #include <libdevcore/Common.h>
 #include <libdevcore/CommonIO.h>
@@ -326,12 +327,9 @@ void dev::solidity::eachInstruction(
 		if (isValidInstruction(instr))
 			additional = instructionInfo(instr).additional;
 		u256 data;
-		for (size_t i = 0; i < additional; ++i)
-		{
-			data <<= 8;
-			if (++it < _mem.end())
-				data |= *it;
-		}
+		for (size_t i = 0; i < std::min(additional, static_cast<size_t>(std::distance(it, _mem.end())) - 1); ++i, --additional)
+			data = (data << 8) + *++it;
+		data <<= 8 * additional; // pad the remaining number of additional octets with zeros
 		_onInstruction(instr, data);
 	}
 }
